@@ -1,6 +1,6 @@
 # zifala/carabdheer-laravel
 
-The Laravel package for [Carabdheer](https://carabdheer.com). It tells Carabdheer what your app is doing: exceptions, slow requests and queries, queued jobs, scheduled tasks, mail, logs, backups and database stats. It sends in small batches after the response, so your users never wait for it.
+The Laravel package for [Carabdheer](https://carabdheer.com). It tells Carabdheer what your app is doing: exceptions, slow requests and queries, queued jobs, scheduled tasks, mail, logs, backups and database stats. Most events go in small batches after the response. Exceptions go at once. A send gives up after `timeout` seconds (2 by default) and never throws into your app.
 
 Laravel 12 or 13 · PHP 8.3+
 
@@ -36,7 +36,7 @@ Without a key (local, CI, tests) the package does nothing and sends nothing.
 | exception      | Every reported exception                   | Class, message, stack (app frames marked), request method, url and headers (authorization, cookies, api keys and csrf tokens replaced by `[filtered]`), user id, environment, release. Same bug is grouped once in Carabdheer. |
 | request        | A sample of requests                       | 10 % by default (`requests.sample_rate`), counted back up in charts. Route, status, duration.                                                                                                                                  |
 | slow_query     | Queries over 1 s                           | SQL with `?` placeholders, never the bound values; duration, connection.                                                                                                                                                       |
-| job            | Processed, failed, retried                 | Class, queue, attempts, duration, wait.                                                                                                                                                                                        |
+| job            | Processed, failed, retried                 | Class, queue, attempts, wait, error if failed.                                                                                                                                                                                 |
 | scheduled_task | Finished or failed                         | Command or callback name, runtime.                                                                                                                                                                                             |
 | mail           | Every sent mail                            | Subject, recipient, mailable class. Delivery, bounces and complaints come from Resend webhooks in Carabdheer.                                                                                                                  |
 | log            | Log lines at `warning` and above           | Level, message, and up to 20 context values (objects sent as their type name only). The line Laravel writes for an exception already sent is skipped. Keep secrets out of log context.                                         |
