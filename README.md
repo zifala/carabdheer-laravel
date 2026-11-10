@@ -1,67 +1,93 @@
-<div align="center">
-    <h1>Carabdheer Laravel</h1>
-</div>
+# zifala/carabdheer-laravel
 
-<p align="center">
-    <a href="https://packagist.org/packages/zifala/carabdheer-laravel"><img src="https://img.shields.io/packagist/v/zifala/carabdheer-laravel.svg?style=flat-square" alt="Packagist"></a>
-    <a href="https://packagist.org/packages/zifala/carabdheer-laravel"><img src="https://img.shields.io/packagist/php-v/zifala/carabdheer-laravel.svg?style=flat-square" alt="PHP from Packagist"></a>
-    <a href="https://packagist.org/packages/zifala/carabdheer-laravel"><img src="https://badge.laravel.cloud/badge/zifala/carabdheer-laravel?style=flat" alt="Laravel versions"></a>
-    <a href="https://github.com/zifala/carabdheer-laravel/actions"><img alt="GitHub Workflow Status (main)" src="https://img.shields.io/github/actions/workflow/status/zifala/carabdheer-laravel/tests.yml?branch=main&label=Tests&style=flat-square"></a>
-    <a href="https://packagist.org/packages/zifala/carabdheer-laravel"><img src="https://img.shields.io/packagist/dt/zifala/carabdheer-laravel.svg?style=flat-square" alt="Total Downloads"></a>
-</p>
+The Laravel package for [Carabdheer](https://carabdheer.com). It tells Carabdheer what your app is doing: exceptions, slow requests and queries, queued jobs, scheduled tasks, mail, logs, backups and database stats. It sends in small batches after the response, so your users never wait for it.
 
-Send exceptions and events from a Laravel app to Carabdheer.
+Laravel 12 or 13 · PHP 8.3+
 
-## Installation
+## Install
 
-You can install the package via Composer:
+1. In Carabdheer: **apps → connect an app**. Copy the app key (`crb_…`).
+2. In your app:
 
 ```bash
 composer require zifala/carabdheer-laravel
 ```
 
-You may publish all of the package's resources at once:
+3. Add the key to `.env`:
 
-```bash
-php artisan vendor:publish --tag="carabdheer-laravel"
+```dotenv
+CARABDHEER_KEY=crb_your_app_key
 ```
 
-Or, you may publish each resource individually:
-
-### Publishing the Configuration File
+4. Run the installer. It publishes the config and sends one test event:
 
 ```bash
-php artisan vendor:publish --tag="carabdheer-laravel-config"
+php artisan carabdheer:install
 ```
 
-### Publishing and Running the Migrations
+The connect page in Carabdheer turns green when the test event arrives.
+
+Without a key (local, CI, tests) the package does nothing and sends nothing.
+
+## What it sends
+
+| Event          | When                                       | Notes                                                                                                                                                                                                                          |
+| -------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| exception      | Every reported exception                   | Class, message, stack (app frames marked), request method, url and headers (authorization, cookies, api keys and csrf tokens replaced by `[filtered]`), user id, environment, release. Same bug is grouped once in Carabdheer. |
+| request        | A sample of requests                       | 10 % by default (`requests.sample_rate`), counted back up in charts. Route, status, duration.                                                                                                                                  |
+| slow_query     | Queries over 1 s                           | SQL with `?` placeholders, never the bound values; duration, connection.                                                                                                                                                       |
+| job            | Processed, failed, retried                 | Class, queue, attempts, duration, wait.                                                                                                                                                                                        |
+| scheduled_task | Finished or failed                         | Command or callback name, runtime.                                                                                                                                                                                             |
+| mail           | Every sent mail                            | Subject, recipient, mailable class. Delivery, bounces and complaints come from Resend webhooks in Carabdheer.                                                                                                                  |
+| log            | Log lines at `warning` and above           | Level, message, and up to 20 context values (objects sent as their type name only). The line Laravel writes for an exception already sent is skipped. Keep secrets out of log context.                                         |
+| backup         | `spatie/laravel-backup` success or failure | Backup name and disk. Powers the "backup missed" alert.                                                                                                                                                                        |
+| database_stats | Every 5 minutes from your scheduler        | Engine, name, size, connections, max connections (mysql, mariadb, pgsql, sqlite).                                                                                                                                              |
+
+Request bodies, query bindings, cookies and session data are never sent.
+
+## Settings
+
+`config/carabdheer.php` (published by the installer):
+
+| Key                    | Default                                                         | What it does                                                                      |
+| ---------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `key`                  | `env('CARABDHEER_KEY')`                                         | The app key. Empty means off.                                                     |
+| `url`                  | `env('CARABDHEER_URL', 'https://carabdheer.com/api/v1/ingest')` | Ingest address.                                                                   |
+| `timeout`              | `2`                                                             | Seconds before a send gives up. A failed send never throws into your app.         |
+| `release`              | `env('APP_RELEASE')`                                            | Git sha or version, shown on errors and as deploy markers. Set it in your deploy. |
+| `requests.sample_rate` | `0.1`                                                           | Share of requests to send, `0` to `1`.                                            |
+| `slow_query_ms`        | `1000`                                                          | Queries slower than this are sent.                                                |
+| `log_level`            | `warning`                                                       | Lowest log level sent.                                                            |
+
+## Linking containers to the app
+
+If the app runs in Docker and the server runs the Carabdheer agent, label the container with the app's name so its restarts and logs show on the app page:
+
+```yaml
+labels:
+    carabdheer.app: shop
+```
+
+## Database stats need the scheduler
+
+Database stats are sent by a scheduled callback every 5 minutes, so the app's scheduler must run (`php artisan schedule:work`, or cron with `schedule:run`).
+
+## Testing it
 
 ```bash
-php artisan vendor:publish --tag="carabdheer-laravel-migrations"
-php artisan migrate
+php artisan carabdheer:install
 ```
 
-## Usage
+runs again safely and sends a new test event. You can also throw one on purpose:
 
-<!-- Add a basic usage example here. -->
+```php
+Route::get('/carabdheer-test', fn () => throw new RuntimeException('Carabdheer test'));
+```
 
-## Changelog
+## Without Laravel
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Thank you for considering contributing to Carabdheer Laravel! Please review our [contributing guide](.github/CONTRIBUTING.md) to get started.
-
-## Security Vulnerabilities
-
-Please review [our security policy](.github/SECURITY.md) on how to report security vulnerabilities.
-
-## Credits
-
-- [Zifala](https://github.com/zifala)
-- [All Contributors](../../contributors)
+Anything that can send HTTP can report through the ingest API: see `/docs/api` on your Carabdheer.
 
 ## License
 
-Carabdheer Laravel is open-sourced software licensed under the [MIT license](LICENSE.md).
+Proprietary, © Zifala.

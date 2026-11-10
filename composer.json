@@ -8,7 +8,7 @@
         "carabdheer-laravel"
     ],
     "homepage": "https://github.com/zifala/carabdheer-laravel",
-    "license": "MIT",
+    "license": "proprietary",
     "authors": [
         {
             "name": "Zifala",
@@ -18,6 +18,8 @@
     ],
     "require": {
         "php": "^8.3",
+        "illuminate/console": "^12.0||^13.0",
+        "illuminate/http": "^12.0||^13.0",
         "illuminate/support": "^12.0||^13.0"
     },
     "require-dev": {
@@ -32,12 +34,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Carabdheer\\Carabdheer\\": "src/"
+            "Zifala\\Carabdheer\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Carabdheer\\Carabdheer\\Tests\\": "tests/",
+            "Zifala\\Carabdheer\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/",
             "Workbench\\Database\\Factories\\": "workbench/database/factories/",
             "Workbench\\Database\\Seeders\\": "workbench/database/seeders/"
@@ -87,11 +89,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Carabdheer\\Carabdheer\\CarabdheerServiceProvider"
-            ],
-            "aliases": {
-                "Carabdheer": "Carabdheer\\Carabdheer\\Facades\\Carabdheer"
-            }
+                "Zifala\\Carabdheer\\CarabdheerServiceProvider"
+            ]
         }
     },
     "config": {
